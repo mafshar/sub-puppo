@@ -18,6 +18,7 @@ from processing import mfcc_processing
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import normalize
 
 have_mfccs = True
 
@@ -32,16 +33,16 @@ def svm_classifier(data, test_size, weak=False, verbose=False):
     if verbose:
         print 'Training sample feature size:', X_train.shape
         print 'Training sample label size:', y_train.shape
-        print 'Test sample feature size:' X_test.shape
+        print 'Test sample feature size:', X_test.shape
         print 'Test sample label size:', y_test.shape
 
     tic = time.time()
 
-    if weak: ## WEAKLY SUPERVISED
+    if weak: ## WEAKLY SUPERVISED (Top Accuracy at 85%)
         svm_clf = SVC(C=10000, kernel='poly', degree=3, tol=0.0001, max_iter=5000, decision_function_shape='ovr')
         svm_clf.fit(X_train, y_train)
         print svm_clf.score(X_test, y_test)
-    else: ## (STRONGLY) SUPERVISED
+    else: ## (STRONGLY) SUPERVISED (Top Accuracy at 60%)
         svm_clf = SVC(C=10000, kernel='poly', degree=6, tol=0.01, max_iter=5000, decision_function_shape='ovr')
         svm_clf.fit(X_train, y_train)
         print svm_clf.score(X_test, y_test)
@@ -56,7 +57,7 @@ if __name__ == '__main__':
     mfcc_path = './data/processed/mfcc/'
     mfccs = None
     data = None
-    weak = False
+
     if not have_mfccs:
         have_mfccs = True
         print 'calculating mfccs...'
@@ -65,6 +66,7 @@ if __name__ == '__main__':
         print 'retrieving mfccs...'
         mfccs = mfcc_processing.read_mfccs(mfcc_path, True)
 
+    weak = True
     if weak:
         data = mfcc_processing.featurize_data(mfccs, weak=True, verbose=True)
         svm_classifier(data, test_size=0.2, weak=True, verbose=False)
