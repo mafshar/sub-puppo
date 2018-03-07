@@ -7,6 +7,8 @@ from librosa import load
 from librosa import feature
 from collections import defaultdict
 
+WEAK_CLASSES = ['classical', 'jazz', 'metal', 'pop']
+
 def calc_mfcc(file):
     y, sr = load(file, sr=16050)
     return feature.mfcc(y=y, sr=sr, n_mfcc=22)
@@ -50,15 +52,24 @@ def read_mfccs(path, verbose=False):
             print '\ttime it took to retrieve mfccs for', sub, 'is', toc-tic
     return mfccs
 
-def calc_features(mfccs, verbose=False):
-    features = defaultdict(lambda: [])
+def featurize_data(mfccs, weak=False, verbose=False):
+    data = {}
+    features = []
+    labels = []
+    label = 0
     for genre in mfccs:
+        if weak and genre not in WEAK_CLASSES:
+            continue
+        label += 1
         tic = time.time()
         if verbose:
             print 'calculating mfcc features for', genre
         for mfcc in mfccs[genre]:
-            features[genre].append(np.sum(mfcc, axis=1, keepdims=True))
+            features.append(np.sum(mfcc, axis=1, keepdims=False))
+            labels.append(label)
         toc = time.time()
         if verbose:
             print '\ttime taken to calculate mfcc features for', genre, 'is', toc-tic
-    return features
+    data['features'] = np.array(features)
+    data['labels'] = np.array(labels)
+    return data
