@@ -20,6 +20,7 @@ from processing import mfcc_processing
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import normalize
 
@@ -88,7 +89,30 @@ def knn_classifier(data, test_size, weak=False, verbose=False):
     toc = time.time()
     if verbose:
         print 'time it took for KNN classifier to run is', toc-tic
+    return
 
+def build_vocabulary(data, verbose=False):
+    pass
+
+def generate_histogram_features(data, vocab, verbose=False):
+    pass
+
+## bag of audio words approach (histogram of occurences)
+def bag_of_words_classifier(data, test_size, weak=False, verbose=False):
+    vocab = build_vocabulary(data, verbose)
+
+    histo_data = generate_histogram_features(data, vocab, verbose)
+
+    norm_data = normalize_and_split(histo_data, test_size, verbose)
+    X_train = norm_data['X_train']
+    X_test = norm_data['X_test']
+    y_train = norm_data['y_train']
+    y_test = norm_data['y_test']
+
+    tic = time.time()
+    toc = time.time()
+    if verbose:
+        print 'time it took for BoW Classification to run is', toc-tic
     return
 
 if __name__ == '__main__':
@@ -105,7 +129,7 @@ if __name__ == '__main__':
         print 'retrieving mfccs...'
         mfccs = mfcc_processing.read_mfccs(mfcc_path, True)
 
-    weak = False
+    weak = True
     if weak:
         data = mfcc_processing.featurize_data(mfccs, weak=True, verbose=True)
         svm_classifier(data, test_size=0.10, weak=True, verbose=True)
