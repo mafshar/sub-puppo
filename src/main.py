@@ -92,16 +92,27 @@ def knn_classifier(data, test_size, weak=False, verbose=False):
     return
 
 def build_vocabulary(data, verbose=False):
-    pass
+    parameters = {}
+    features = data['features']
+    labels = data['labels']
+    kmeans = KMeans(n_clusters=5, init='random', max_iter=500, n_jobs=-1)
+    kmeans.fit(features)
+    vocab = kmeans.cluster_centers_
+    dist_features = kmeans.transform(features)
+    parameters['dist_features'] = dist_features
+    parameters['labels'] = labels
+    parameters['vocab'] = vocab
+    return parameters
 
-def generate_histogram_features(data, vocab, verbose=False):
+## @TODO: write the function that creates a feature vector for each of the songs
+def generate_histogram_features(data, parameters, verbose=False):
     pass
 
 ## bag of audio words approach (histogram of occurences)
 def bag_of_words_classifier(data, test_size, weak=False, verbose=False):
-    vocab = build_vocabulary(data, verbose)
+    parameters = build_vocabulary(data, verbose)
 
-    histo_data = generate_histogram_features(data, vocab, verbose)
+    histo_data = generate_histogram_features(data, parameters, verbose)
 
     norm_data = normalize_and_split(histo_data, test_size, verbose)
     X_train = norm_data['X_train']
