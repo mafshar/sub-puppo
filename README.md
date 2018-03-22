@@ -42,3 +42,8 @@ Create a `data` directory in the project root directory and type in the followin
 ```bash
 $ wget http://opihi.cs.uvic.ca/sound/genres.tar.gz -P ./data
 ```
+
+To run the code:
+```bash
+$ python ./src/main.py
+```

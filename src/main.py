@@ -15,8 +15,9 @@ import glob
 import sys
 import time
 
-from processing import mfcc_processing
+import numpy as np
 
+from processing import mfcc_processing
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
@@ -106,7 +107,12 @@ def build_vocabulary(data, verbose=False):
 
 ## @TODO: write the function that creates a feature vector for each of the songs
 def generate_histogram_features(data, parameters, verbose=False):
-    pass
+    vocab = parameters['vocab']
+    dist_features = parameters['dist_features']
+    min_indices = np.argmin(dist_features, axis=1)
+    features = []
+    print min_indices
+    return
 
 ## bag of audio words approach (histogram of occurences)
 def bag_of_words_classifier(data, test_size, weak=False, verbose=False):
@@ -139,6 +145,12 @@ if __name__ == '__main__':
     else :
         print 'retrieving mfccs...'
         mfccs = mfcc_processing.read_mfccs(mfcc_path, True)
+
+
+    data = mfcc_processing.featurize_data(mfccs, weak=True, verbose=True)
+    params = build_vocabulary(data, verbose=True)
+    generate_histogram_features(data, params, verbose=True)
+    exit(0)
 
     weak = True
     if weak:
