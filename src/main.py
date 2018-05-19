@@ -14,10 +14,19 @@ import os
 import glob
 import sys
 import time
+import warnings
+warnings.filterwarnings("ignore")
 
 import numpy as np
 
-from processing import mfcc_processing
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import torchvision.transforms as transforms
+
+from processing import mfcc_processing, datasets
+from deep_models import models
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
@@ -98,33 +107,47 @@ def build_vocabulary(data, verbose=False):
     parameters['vocab'] = vocab
     return parameters
 
-## @TODO: write the function that creates a feature vector for each of the songs
-def generate_histogram_features(data, parameters, verbose=False):
-    vocab = parameters['vocab']
-    dist_features = parameters['dist_features']
-    min_indices = np.argmin(dist_features, axis=1)
-    features = []
-    print min_indices
-    return
+def nn_model(data, test_size, weak=False, verbose=False):
+    # transform = transforms.Compose(
+    #     [transforms.ToTensor(),
+    #     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    dataset = MfccDatasetWeak(mfcc_path)
+    trainloader, testloader = train_test_split(dataset)
 
-## @TODO: build classifier using the generate_histogram_features function
-## bag of audio words approach (histogram of occurences)
-def bag_of_words_classifier(data, test_size, weak=False, verbose=False):
-    parameters = build_vocabulary(data, verbose)
+    net = MfccNetWeak()
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
-    histo_data = generate_histogram_features(data, parameters, verbose)
+    for epoch in range(num_epochs):
 
-    norm_data = normalize_and_split(histo_data, test_size, verbose)
-    X_train = norm_data['X_train']
-    X_test = norm_data['X_test']
-    y_train = norm_data['y_train']
-    y_test = norm_data['y_test']
+        running_loss = 0.0
+        for i, data in enumerate(trainloader, 0):
+
+            print i, data
+
+            exit()
+            inputs = data
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
+            outputs = net(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward
+            optimizer.step()
+
+            # print statistics
+            running_loss += loss.item()
+            if i % 2000 == 1999:    # print every 2000 mini-batches
+                print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / 2000))
+
+            running_loss = 0.0
+
 
     tic = time.time()
-    toc = time.time()
-    if verbose:
-        print 'time taken  for BoW Classification to run is', toc-tic
-    return
+
+    net = models.MfccNetWeak()
 
 if __name__ == '__main__':
 
@@ -146,13 +169,15 @@ if __name__ == '__main__':
 
     print
 
-    weak = False
+    weak = True
     if weak:
         data = mfcc_processing.featurize_data(mfccs, weak=True, verbose=True)
         print
         svm_classifier(data, test_size=0.10, weak=True, verbose=True)
         print
         knn_classifier(data, test_size=0.10, weak=True, verbose=True)
+        print
+        nn_models(data, test_size=0.10, weak=True, verbose=True)
     else:
         data = mfcc_processing.featurize_data(mfccs, weak=False, verbose=True)
         print
