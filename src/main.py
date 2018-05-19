@@ -25,6 +25,8 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import normalize
 
+input_path = './data/genres/'
+mfcc_path = './data/processed/mfcc/'
 have_mfccs = True
 
 def normalize_and_split(data, test_size, verbose=False):
@@ -45,7 +47,6 @@ def normalize_and_split(data, test_size, verbose=False):
         print 'Test sample label size:', y_test.shape
     return norm_data
 
-## optimal parameters are passed into the classifers
 def svm_classifier(data, test_size, weak=False, verbose=False):
     norm_data = normalize_and_split(data, test_size, verbose)
     X_train = norm_data['X_train']
@@ -55,18 +56,14 @@ def svm_classifier(data, test_size, weak=False, verbose=False):
 
     tic = time.time()
 
-    if weak: ## WEAKLY SUPERVISED (Top Accuracy at 85%)
-        svm_clf = SVC(C=10000, kernel='poly', degree=3, tol=0.0001, max_iter=5000, decision_function_shape='ovr')
-        svm_clf.fit(X_train, y_train)
-        print svm_clf.score(X_test, y_test)
-    else: ## (STRONGLY) SUPERVISED (Top Accuracy at 60%)
-        svm_clf = SVC(C=10000, kernel='poly', degree=6, tol=0.01, max_iter=5000, decision_function_shape='ovr')
-        svm_clf.fit(X_train, y_train)
-        print svm_clf.score(X_test, y_test)
+    svm_clf = SVC(C=10000, kernel='poly', degree=3, tol=0.0001, max_iter=5000, decision_function_shape='ovr') if weak \
+        else SVC(C=10000, kernel='poly', degree=6, tol=0.01, max_iter=5000, decision_function_shape='ovr')
+    svm_clf.fit(X_train, y_train)
+    print 'TEST ACCURACY:', svm_clf.score(X_test, y_test)
 
     toc = time.time()
     if verbose:
-        print 'time it took for SVM classifier to run is', toc-tic
+        print '\ttime taken  for SVM classifier to run is', toc-tic
     return
 
 def knn_classifier(data, test_size, weak=False, verbose=False):
@@ -78,18 +75,14 @@ def knn_classifier(data, test_size, weak=False, verbose=False):
 
     tic = time.time()
 
-    if weak: ## WEAKLY SUPERVISED (Top Accuracy at 83.75%)
-        knn_clf = KNeighborsClassifier(n_neighbors=3, weights='distance', p=1, n_jobs=-1)
-        knn_clf.fit(X_train, y_train)
-        print knn_clf.score(X_test, y_test)
-    else: ## (STRONGLY) SUPERVISED (Top Accuracy at 57.5%)
-        knn_clf = KNeighborsClassifier(n_neighbors=8, weights='distance', p=1, n_jobs=-1)
-        knn_clf.fit(X_train, y_train)
-        print knn_clf.score(X_test, y_test)
+    knn_clf = KNeighborsClassifier(n_neighbors=3, weights='distance', p=1, n_jobs=-1) if weak \
+        else KNeighborsClassifier(n_neighbors=8, weights='distance', p=1, n_jobs=-1)
+    knn_clf.fit(X_train, y_train)
+    print 'TEST ACCURACY:', knn_clf.score(X_test, y_test)
 
     toc = time.time()
     if verbose:
-        print 'time it took for KNN classifier to run is', toc-tic
+        print '\ttime taken  for KNN classifier to run is', toc-tic
     return
 
 def build_vocabulary(data, verbose=False):
@@ -114,6 +107,7 @@ def generate_histogram_features(data, parameters, verbose=False):
     print min_indices
     return
 
+## @TODO: build classifier using the generate_histogram_features function
 ## bag of audio words approach (histogram of occurences)
 def bag_of_words_classifier(data, test_size, weak=False, verbose=False):
     parameters = build_vocabulary(data, verbose)
@@ -129,12 +123,11 @@ def bag_of_words_classifier(data, test_size, weak=False, verbose=False):
     tic = time.time()
     toc = time.time()
     if verbose:
-        print 'time it took for BoW Classification to run is', toc-tic
+        print 'time taken  for BoW Classification to run is', toc-tic
     return
 
 if __name__ == '__main__':
-    input_path = './data/genres/'
-    mfcc_path = './data/processed/mfcc/'
+
     mfccs = None
     data = None
 
@@ -148,16 +141,21 @@ if __name__ == '__main__':
 
 
     data = mfcc_processing.featurize_data(mfccs, weak=True, verbose=True)
-    params = build_vocabulary(data, verbose=True)
-    generate_histogram_features(data, params, verbose=True)
-    exit(0)
+    # params = build_vocabulary(data, verbose=True)
+    # generate_histogram_features(data, params, verbose=True)
 
-    weak = True
+    print
+
+    weak = False
     if weak:
         data = mfcc_processing.featurize_data(mfccs, weak=True, verbose=True)
+        print
         svm_classifier(data, test_size=0.10, weak=True, verbose=True)
+        print
         knn_classifier(data, test_size=0.10, weak=True, verbose=True)
     else:
         data = mfcc_processing.featurize_data(mfccs, weak=False, verbose=True)
+        print
         svm_classifier(data, test_size=0.10, weak=False, verbose=True)
+        print
         knn_classifier(data, test_size=0.10, weak=False, verbose=True)
