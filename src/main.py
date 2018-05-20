@@ -23,7 +23,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import torchvision.transforms as transforms
 
 from processing import mfcc_processing, datasets
 from deep_models import models
@@ -94,39 +93,30 @@ def knn_classifier(data, test_size, weak=False, verbose=False):
         print '\ttime taken  for KNN classifier to run is', toc-tic
     return
 
-def build_vocabulary(data, verbose=False):
-    parameters = {}
-    features = data['features']
-    labels = data['labels']
-    kmeans = KMeans(n_clusters=5, init='random', max_iter=500, n_jobs=-1)
-    kmeans.fit(features)
-    vocab = kmeans.cluster_centers_
-    dist_features = kmeans.transform(features)
-    parameters['dist_features'] = dist_features
-    parameters['labels'] = labels
-    parameters['vocab'] = vocab
-    return parameters
+def mfcc_nn_model(num_epochs, test_size, weak=False, verbose=False):
+    tic = time.time()
 
-def nn_model(data, test_size, weak=False, verbose=False):
-    # transform = transforms.Compose(
-    #     [transforms.ToTensor(),
-    #     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    dataset = MfccDatasetWeak(mfcc_path)
-    trainloader, testloader = train_test_split(dataset)
+    tensorize = datasets.ToTensor()
+    dataset = None
+    net = None
 
-    net = MfccNetWeak()
+    if weak:
+        dataset = datasets.MfccDatasetWeak(mfcc_path, tensorize)
+        net = models.MfccNetWeak()
+    else:
+        dataset = datasets.MfccDataset(mfcc_path, tensorize)
+        net = models.MfccNet()
+
+    trainloader, testloader = datasets.train_test_dataset_split(dataset)
+
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.SGD(net.parameters(), lr=0.1, momentum=0.8)
 
     for epoch in range(num_epochs):
-
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
 
-            print i, data
-
-            exit()
-            inputs = data
+            inputs, labels = data
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -139,15 +129,28 @@ def nn_model(data, test_size, weak=False, verbose=False):
 
             # print statistics
             running_loss += loss.item()
-            if i % 2000 == 1999:    # print every 2000 mini-batches
+            if verbose and i % 5 == 0:    # print every 2000 mini-batches
                 print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / 2000))
 
             running_loss = 0.0
 
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data in testloader:
+                inputs, labels = data
+                outputs = net(inputs)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
 
-    tic = time.time()
+    print 'TEST ACCURACY:', 1. * correct / total
 
-    net = models.MfccNetWeak()
+    toc = time.time()
+    if verbose:
+        print '\ttime taken  for Mfcc NN to run is', toc-tic
+
+    return
 
 if __name__ == '__main__':
 
@@ -164,12 +167,10 @@ if __name__ == '__main__':
 
 
     data = mfcc_processing.featurize_data(mfccs, weak=True, verbose=True)
-    # params = build_vocabulary(data, verbose=True)
-    # generate_histogram_features(data, params, verbose=True)
 
     print
 
-    weak = True
+    weak = False
     if weak:
         data = mfcc_processing.featurize_data(mfccs, weak=True, verbose=True)
         print
@@ -177,10 +178,12 @@ if __name__ == '__main__':
         print
         knn_classifier(data, test_size=0.10, weak=True, verbose=True)
         print
-        nn_models(data, test_size=0.10, weak=True, verbose=True)
+        mfcc_nn_model(num_epochs=10, test_size=0.10, weak=True, verbose=True)
     else:
         data = mfcc_processing.featurize_data(mfccs, weak=False, verbose=True)
         print
         svm_classifier(data, test_size=0.10, weak=False, verbose=True)
         print
         knn_classifier(data, test_size=0.10, weak=False, verbose=True)
+        print
+        mfcc_nn_model(num_epochs=10, test_size=0.10, weak=False, verbose=True)
