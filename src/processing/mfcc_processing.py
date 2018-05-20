@@ -52,6 +52,9 @@ def read_mfccs(path, verbose=False):
             print '\ttime it took to retrieve mfccs for', sub, 'is', toc-tic
     return mfccs
 
+def featurize_mfcc(mfcc):
+    return np.sum(mfcc, axis=1, keepdims=False)
+
 def featurize_data(mfccs, weak=False, verbose=False):
     data = {}
     features = []
@@ -65,7 +68,7 @@ def featurize_data(mfccs, weak=False, verbose=False):
         if verbose:
             print 'calculating mfcc features for', genre
         for mfcc in mfccs[genre]:
-            features.append(np.sum(mfcc, axis=1, keepdims=False))
+            features.append(featurize_mfcc(mfcc))
             labels.append(label)
         toc = time.time()
         if verbose:
