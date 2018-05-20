@@ -49,6 +49,13 @@ Fully supervised:  0.61
 Weakly supervised: 0.9
 Fully supervised:  0.63
 
+### NN
+
+#### Mfcc NN
+
+Weakly supervised: 0.75
+Fully supervised: 0.75 (!!!!)
+
 ## Setup
 
 ### Procuring the Data
